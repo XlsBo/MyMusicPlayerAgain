@@ -7,6 +7,7 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -17,11 +18,19 @@ import music.util.GetMedia;
 import music.util.ListContent;
 
 //主界面，显示歌曲列表，选择播放模式，显示播放进度
-public class HomeActivity extends Activity implements OnItemClickListener{
+public class HomeActivity extends Activity implements OnItemClickListener,OnClickListener{
+	private int thePlayPosition = 0;
+	private int itemPosition = -10;
+	private int buttonPosition = 0;
 	private static String currentSong = null;
 	private static String nextSong = null;
 	private List<ListContent> listContent;
 	private MediaPlayer mediaPlayer = new MediaPlayer();
+	private Button previous;
+	private Button repeat;
+	private Button play;
+	private Button shuffle;
+	private Button next;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +40,8 @@ public class HomeActivity extends Activity implements OnItemClickListener{
 		listContent = GetMedia.getSongInfo(HomeActivity.this);
 		SongListAdapter songListAdapter = new SongListAdapter(HomeActivity.this,R.layout.song_item,listContent);
 		ListView listView = (ListView) findViewById(R.id.home_list);
+		viewFindViewById();
+		viewOnClickListener();
 		listView.setAdapter(songListAdapter);
 		songListAdapter.notifyDataSetChanged();
 		listView.setOnItemClickListener(this);
@@ -39,6 +50,7 @@ public class HomeActivity extends Activity implements OnItemClickListener{
 	//监听listView
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		itemPosition = position;
 		ListContent songListContent =listContent.get(position);
 		songListContent = listContent.get(position);//获得被点击的对象
 		//第一次点击歌曲的时候获得当前歌曲的路径
@@ -75,6 +87,113 @@ public class HomeActivity extends Activity implements OnItemClickListener{
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void onClick(View v) {
+		switch(v.getId()) {
+		case R.id.previous:
+			previousMusic();
+			break;
+		case R.id.play:
+			playMusic();
+			break;
+		case R.id.next:
+			nextMusic();
+			break;
+		default:
+			break;
+		}
+	}
+	
+	// 播放上一首
+	public void previousMusic() {
+		ListContent previousSongContent = null;
+		if(currentSong == null) {
+			thePlayPosition = listContent.size()-1;
+			//播放音乐的逻辑
+			initMediaPlayer(previousSongContent,thePlayPosition);
+			mediaPlayer.start();
+		}else if(currentSong != null) {
+			if(itemPosition == -10) {
+				thePlayPosition = buttonPosition;
+			}else {
+				thePlayPosition = itemPosition;
+				itemPosition--;
+			}
+			thePlayPosition--;
+			if(thePlayPosition <0 ) {
+				thePlayPosition = listContent.size()-1;
+			}
+			//播放音乐
+			mediaPlayer.reset();
+			initMediaPlayer(previousSongContent,thePlayPosition);
+			mediaPlayer.start();
+		}
+	}
+	
+	//暂停或继续播放
+	public void playMusic() {
+		if(currentSong != null) {
+			if(mediaPlayer.isPlaying()) {
+				mediaPlayer.pause();
+			}else {
+				mediaPlayer.start();
+			}
+		}
+	}
+	
+	public void nextMusic() {
+		ListContent nextSongContent = null;
+		if(currentSong == null) {
+			thePlayPosition = 0;
+			//播放音乐的逻辑
+			initMediaPlayer(nextSongContent,thePlayPosition);
+			mediaPlayer.start();
+		}else if(currentSong != null) {
+			if(itemPosition == -10) {
+				thePlayPosition = buttonPosition;
+			}else {
+				thePlayPosition = itemPosition;
+				itemPosition++;
+			}
+			thePlayPosition++;
+			if(thePlayPosition > listContent.size()-1) {
+				thePlayPosition = 0;
+			}
+			//播放音乐
+			mediaPlayer.reset();
+			initMediaPlayer(nextSongContent,thePlayPosition);
+			mediaPlayer.start();
+		}
+	}
+	
+	public void initMediaPlayer(ListContent initSongContent,int position) {
+		initSongContent = listContent.get(position);
+		buttonPosition = position;
+		currentSong = initSongContent.getSongPath();
+		try {
+			mediaPlayer.setDataSource(initSongContent.getSongPath());
+			mediaPlayer.prepare();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void viewFindViewById() {
+		previous = (Button) findViewById(R.id.previous);
+		repeat = (Button) findViewById(R.id.repeat);
+		play = (Button) findViewById(R.id.play);
+		shuffle = (Button) findViewById(R.id.shuffle);
+		next = (Button) findViewById(R.id.next);
+	}
+	
+	public void viewOnClickListener() {
+		previous.setOnClickListener(this);
+		repeat.setOnClickListener(this);
+		play.setOnClickListener(this);
+		shuffle.setOnClickListener(this);
+		next.setOnClickListener(this);
 	}
 	
 	@Override
