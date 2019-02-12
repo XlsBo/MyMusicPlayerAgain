@@ -2,8 +2,11 @@ package music.activity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+
 import android.app.Activity;
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -13,15 +16,19 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 import music.adapter.SongListAdapter;
 import music.util.GetMedia;
 import music.util.ListContent;
 
 //主界面，显示歌曲列表，选择播放模式，显示播放进度
-public class HomeActivity extends Activity implements OnItemClickListener,OnClickListener{
+public class HomeActivity extends Activity implements OnItemClickListener,OnClickListener,OnCompletionListener{
+	private int repeatModel = 0;//单曲循环
+	private int shuffleModel = 0;//随机播放
+	private Random shuffleRandom = new Random();;
 	private int thePlayPosition = 0;
-	private int itemPosition = -10;
-	private int buttonPosition = 0;
+	private int itemPosition = -10;//没有点击列表播放歌曲
+	private int buttonPosition = 0;//点击上一首或下一首播放歌曲
 	private static String currentSong = null;
 	private static String nextSong = null;
 	private List<ListContent> listContent;
@@ -45,6 +52,7 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		listView.setAdapter(songListAdapter);
 		songListAdapter.notifyDataSetChanged();
 		listView.setOnItemClickListener(this);
+		mediaPlayer.setOnCompletionListener(this);
 	}
 
 	//监听listView
@@ -56,7 +64,6 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		//第一次点击歌曲的时候获得当前歌曲的路径
 		if(currentSong == null) {
 			currentSong = songListContent.getSongPath();
-			Log.d("HomeActivity","currentSong" + currentSong);
 			try {
 				mediaPlayer.setDataSource(currentSong);
 				mediaPlayer.prepare();
@@ -95,9 +102,34 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		case R.id.previous:
 			previousMusic();
 			break;
+		case R.id.repeat:
+			repeatModel++;
+			shuffleModel = 0;
+			if(repeatModel>1) {
+				repeatModel = 0;
+				mediaPlayer.setLooping(false);
+				Toast.makeText(this, "顺序播放", Toast.LENGTH_SHORT).show();	
+			}else {
+				mediaPlayer.setLooping(true);
+				Toast.makeText(this, "单曲循环", Toast.LENGTH_SHORT).show();
+			}
+			break;
 		case R.id.play:
 			playMusic();
 			break;
+		case R.id.shuffle:
+			shuffleModel++;
+			repeatModel = 0;
+			if(shuffleModel>1) {
+				shuffleModel = 0;
+				String ce0 = Integer.toString(shuffleModel);
+				Log.d("HomeActivity","ce0" + ce0);
+				Toast.makeText(this, "顺序播放", Toast.LENGTH_SHORT).show();	
+			}else if(shuffleModel == 1){
+				String ce1 = Integer.toString(shuffleModel);
+				Log.d("HomeActivity","ce1" + ce1);
+				Toast.makeText(this, "随机播放", Toast.LENGTH_SHORT).show();
+			}break;
 		case R.id.next:
 			nextMusic();
 			break;
@@ -105,7 +137,31 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			break;
 		}
 	}
-	
+	//音乐播放完成时调用
+		@Override
+		public void onCompletion(MediaPlayer mp) {
+			ListContent completionSongContent = null;
+			//随机播放
+			if(shuffleModel == 1) {
+				thePlayPosition = shuffleRandom.nextInt(listContent.size()-1);//产生随机数播放音乐
+				String cePosition = Integer.toString(thePlayPosition);
+				Log.d("HomeActivity","cePosition" + cePosition);
+				mediaPlayer.reset();
+				initMediaPlayer(completionSongContent,thePlayPosition);
+				mediaPlayer.start();
+			}else if(mediaPlayer.isLooping() == false) {
+				//点击列表播放歌曲
+				if(itemPosition == -10) {
+					thePlayPosition = ++buttonPosition;
+					//上一首或下一首播放歌曲
+				}else {
+					thePlayPosition = ++itemPosition;
+				}
+				mediaPlayer.reset();
+				initMediaPlayer(completionSongContent,thePlayPosition);
+				mediaPlayer.start();
+			}
+		}
 	// 播放上一首
 	public void previousMusic() {
 		ListContent previousSongContent = null;
@@ -114,7 +170,7 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			//播放音乐的逻辑
 			initMediaPlayer(previousSongContent,thePlayPosition);
 			mediaPlayer.start();
-		}else if(currentSong != null) {
+		}else if(currentSong != null && shuffleModel != 1) {
 			if(itemPosition == -10) {
 				thePlayPosition = buttonPosition;
 			}else {
@@ -125,6 +181,12 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			if(thePlayPosition <0 ) {
 				thePlayPosition = listContent.size()-1;
 			}
+			//播放音乐
+			mediaPlayer.reset();
+			initMediaPlayer(previousSongContent,thePlayPosition);
+			mediaPlayer.start();
+		}else if(currentSong != null && shuffleModel == 1) {
+			thePlayPosition = shuffleRandom.nextInt(listContent.size()-1);
 			//播放音乐
 			mediaPlayer.reset();
 			initMediaPlayer(previousSongContent,thePlayPosition);
@@ -143,6 +205,8 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		}
 	}
 	
+	//单曲音乐播放完成时调用
+	
 	public void nextMusic() {
 		ListContent nextSongContent = null;
 		if(currentSong == null) {
@@ -150,7 +214,7 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			//播放音乐的逻辑
 			initMediaPlayer(nextSongContent,thePlayPosition);
 			mediaPlayer.start();
-		}else if(currentSong != null) {
+		}else if(currentSong != null && shuffleModel != 1) {
 			if(itemPosition == -10) {
 				thePlayPosition = buttonPosition;
 			}else {
@@ -165,6 +229,12 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			mediaPlayer.reset();
 			initMediaPlayer(nextSongContent,thePlayPosition);
 			mediaPlayer.start();
+		}else if(currentSong != null && shuffleModel == 1) {
+			thePlayPosition = shuffleRandom.nextInt(listContent.size()-1);
+			//播放音乐
+			mediaPlayer.reset();
+			initMediaPlayer(nextSongContent,thePlayPosition);
+			mediaPlayer.start();
 		}
 	}
 	
@@ -172,6 +242,8 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		initSongContent = listContent.get(position);
 		buttonPosition = position;
 		currentSong = initSongContent.getSongPath();
+		String displaySong = initSongContent.getSong();
+		Toast.makeText(this, displaySong, Toast.LENGTH_SHORT).show();
 		try {
 			mediaPlayer.setDataSource(initSongContent.getSongPath());
 			mediaPlayer.prepare();
