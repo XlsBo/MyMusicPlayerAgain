@@ -32,6 +32,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".PlayActivity"
+            ></activity>
+        <service
+            android:name="music.service.PlayMusicService"
+            ></service>
     </application>
 
 </manifest>
