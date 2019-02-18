@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
     <LinearLayout 
+        android:id="@+id/btm_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -44,12 +45,73 @@
             android:background="@drawable/next"
             />
     </LinearLayout>
-
     <ListView 
         android:id="@+id/home_list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        ></ListView>
-    
+        android:layout_height="wrap_content"  
+        android:layout_below="@id/btm_layout" 
+        android:layout_marginBottom="58dp"  
+        >    
+    </ListView>
 
-</LinearLayout>
+   <RelativeLayout
+         android:id="@+id/play_layout"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_below="@id/btm_layout" >
+
+        <Button
+            android:id="@+id/current_song"
+            android:layout_width="wrap_content"
+            android:layout_height="50.0dip"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/play_image"  />
+
+        <RelativeLayout
+            android:id="@+id/title_duration"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignTop="@id/current_song"
+            android:layout_toRightOf="@id/current_song" >
+
+            <TextView
+                android:id="@+id/song_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_marginLeft="5.0dp"
+                android:layout_marginTop="5.0dp"
+                android:ellipsize="marquee"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:singleLine="true"
+                android:text="@string/current_song"
+                 />
+
+            <TextView
+                android:id="@+id/song_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/song_title"
+                android:layout_marginBottom="5.0dp"
+                android:layout_marginLeft="5.0dp"
+                android:text="@string/current_duration"
+                 />
+
+            <Button
+                android:id="@+id/play_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentTop="true"
+                android:background="@drawable/play_image" />
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

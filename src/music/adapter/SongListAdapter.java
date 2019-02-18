@@ -31,6 +31,7 @@ public class SongListAdapter extends ArrayAdapter<ListContent>{
 			viewHolder.songImage = (ImageView) view.findViewById(R.id.song_image);
 			viewHolder.songName = (TextView) view.findViewById(R.id.song_name);
 			viewHolder.songDuration = (TextView) view.findViewById(R.id.song_duration);
+			viewHolder.songArtist = (TextView) view .findViewById(R.id.song_artist);
 			//public void setTag (Object tag)设置与此视图关联的标记。
 			view.setTag(viewHolder);
 		}else {
@@ -42,6 +43,7 @@ public class SongListAdapter extends ArrayAdapter<ListContent>{
 		viewHolder.songImage.setImageResource(listContent.getImageId());
 		viewHolder.songName.setText(listContent.getSong());
 		viewHolder.songDuration.setText(GetMedia.formatTime(listContent.getDuration()));
+		viewHolder.songArtist.setText(listContent.getSongArtist());
 		return view;
 	}
 }
@@ -50,4 +52,5 @@ class ViewHolder{
 	ImageView songImage;
 	TextView songName;
 	TextView songDuration;
+	TextView songArtist;
 }

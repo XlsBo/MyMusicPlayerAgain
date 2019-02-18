@@ -1,23 +1,22 @@
 package music.activity;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.TextView;
 import music.adapter.SongListAdapter;
 import music.service.PlayMusicService;
 import music.util.GetMedia;
@@ -25,13 +24,17 @@ import music.util.ListContent;
 
 //主界面，显示歌曲列表，选择播放模式，显示播放进度
 public class HomeActivity extends Activity implements OnItemClickListener,OnClickListener{
+	public static final String CURRENT_TIME_ACTION = "music.action.SONG_CURRENT_TIME";	
+	public static final String CURRENT_TITLE_ACTION = "music.action.SONG_CURRENT_TITLE";
+	public static final String CURRENT_ARTIST_ACTION="musci.acitoin.SONG_CURRENT_ARTIST";
+	public static final int RETURNPLAY = 1;
 	private int buttonName = 0;          //按钮的Id
 	private Intent toServiceIntent;
+	private Intent nextIntent = new Intent();
 	private String currentSong = null;   //当前歌曲的路径
 	private String nextSong = null;      //下一首歌曲的路径
 	private int thePlayPosition = 0;
 	private int buttonPosition = 0;
-	private Random shuffleRandom = new Random();
 	private int repeatModel = 0;      //单曲循环（0是false，1是true）;
 	private int shuffleModel = 0;     //随机播放
 	private int itemPosition = -10;//没有点击列表播放歌曲
@@ -42,11 +45,20 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 	private Button play;
 	private Button shuffle;
 	private Button next;
+	private Button playImage;   //切换活动的按钮
+	private TextView songTitle;
+	private TextView songDuration;
 	private int itemOpen = 0;   //判断是否点击了列表上的歌曲
+	private IntentFilter intentFilter; 
+	private MyBroadcastReceiver mBroadcastReceiver;
+	private int songCurrentTime = 0;
+	private int theSongTitle = -1;
+	private String equalSong = "equalSong";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.home_layout);
 		//静态方法应该使用ClassName.staticMethod()的形式使用
 		listContent = GetMedia.getSongInfo(HomeActivity.this);
@@ -57,6 +69,11 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		listView.setAdapter(songListAdapter);
 		songListAdapter.notifyDataSetChanged();
 		listView.setOnItemClickListener(this);
+		intentFilter = new IntentFilter();
+		intentFilter.addAction(CURRENT_TIME_ACTION);
+		intentFilter.addAction(CURRENT_TITLE_ACTION);
+		mBroadcastReceiver = new MyBroadcastReceiver();
+		registerReceiver(mBroadcastReceiver,intentFilter);
 	}
 
 	//监听listView
@@ -87,13 +104,14 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 				currentSong = nextSong;                      //如果点击的歌曲和上一次点击的不一样，则播放当前点击的歌曲
 				//如果点击的歌曲和上一次点击的一样，则暂停或继续播放
 			}else {
-				toServiceIntent.putExtra("equalSong", "equalSong");//连续两次点击同一首歌
+				toServiceIntent.putExtra("equalSong", equalSong);//连续两次点击同一首歌
 				toServiceIntent.putExtra("currentSong", currentSong);
 				toServiceIntent.putExtra("nextSong", nextSong);
 				toServiceIntent.putExtra("itemPosition", itemPosition);
 				startService(toServiceIntent);
 			}
 		}
+		//timer.schedule(task, 0, 1000);
 	}
 	
 	@Override
@@ -101,10 +119,10 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		Intent toServiceIntent = new Intent(HomeActivity.this,PlayMusicService.class);
 		buttonName = v.getId();
 		switch(v.getId()) {
-		case R.id.previous:
+		case R.id.previous:                        //上一首
 			previousMusic(toServiceIntent,buttonName);
 			break;
-		case R.id.repeat:
+		case R.id.repeat:                          //单曲循环
 			repeatModel++;
 			shuffleModel = 0;
 			if(repeatModel>1) {
@@ -113,10 +131,10 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			sendState(toServiceIntent);
 			startService(toServiceIntent);
 			break;
-		case R.id.play:
+		case R.id.play:                            //播放与暂停
 			playMusic(toServiceIntent,buttonName);
 			break;
-		case R.id.shuffle:
+		case R.id.shuffle:                         //随机播放
 			shuffleModel++;
 			repeatModel = 0;
 			if(shuffleModel>1) {
@@ -125,8 +143,14 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			sendState(toServiceIntent);
 			startService(toServiceIntent);
 			break;
-		case R.id.next:
+		case R.id.next:                            //下一首
 			nextMusic(toServiceIntent,buttonName);
+			break;
+		case R.id.play_image:
+			nextIntent = new Intent(HomeActivity.this,PlayActivity.class);
+			nextIntent.putExtra("theSongTitle", theSongTitle);
+			sendState(nextIntent);
+			startActivityForResult(nextIntent,RETURNPLAY);
 			break;
 		default:
 			break;
@@ -143,13 +167,13 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			thePlayPosition = listContent.size()-1;
 			//播放音乐的逻辑
 			initMediaPlayer(previousSongContent,thePlayPosition);
+			previousIntent.putExtra("repeatModel", repeatModel);
 			previousIntent.putExtra("buttonPosition", buttonPosition);
+			previousIntent.putExtra("shffleMedol", shuffleModel);
 			startService(previousIntent);
 		}else if(currentSong != null && shuffleModel != 1) {
 			if(itemPosition == -10){
-				Log.d("HomeActivity","buttonPosition 0 "+ buttonPosition);
 				thePlayPosition = --buttonPosition;
-				Log.d("HomeActivity","itemPosition 1 "+ itemPosition);
 			}else {
 				thePlayPosition = itemPosition;
 				itemPosition--;
@@ -157,23 +181,10 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			if(itemPosition == -1 ) {
 				itemPosition = listContent.size()-1;
 			}
-			/*if(thePlayPosition <0 ) {
-				thePlayPosition = listContent.size()-1;
-			}*/
-			/*nextIntent.putExtra("repeatModel", repeatModel);
-			nextIntent.putExtra("itemPosition", itemPosition);
-			nextIntent.putExtra("currentSong", currentSong);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("buttonPosition", buttonPosition);*/
 			sendState(previousIntent);
 			startService(previousIntent);
 			buttonPosition--;
 		}else if(currentSong != null && shuffleModel == 1) {
-			/*nextIntent.putExtra("repeatModel", repeatModel);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("currentSong", currentSong);
-			nextIntent.putExtra("buttonPosition", buttonPosition);*/
 			sendState(previousIntent);
 			startService(previousIntent);
 		}
@@ -196,6 +207,8 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		ListContent nextSongContent = null;
 		if(currentSong == null) {
 			nextIntent.putExtra("currentSong", currentSong);
+			nextIntent.putExtra("repeatModel", repeatModel);
+			nextIntent.putExtra("shffleMedol", shuffleModel);
 			startService(nextIntent);
 			thePlayPosition = 0;
 			//播放音乐的逻辑
@@ -211,23 +224,10 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 			if(itemPosition > listContent.size()-1 ) {
 				itemPosition = 0;
 			}
-			/*if(thePlayPosition <0 ) {
-				thePlayPosition = listContent.size()-1;
-			}*/
-			/*nextIntent.putExtra("repeatModel", repeatModel);
-			nextIntent.putExtra("itemPosition", itemPosition);
-			nextIntent.putExtra("currentSong", currentSong);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("buttonPosition", buttonPosition);*/
 			sendState(nextIntent);
 			startService(nextIntent);
 			buttonPosition++;
 		}else if(currentSong != null && shuffleModel == 1) {
-			/*nextIntent.putExtra("repeatModel", repeatModel);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("shuffleModel", shuffleModel);
-			nextIntent.putExtra("currentSong", currentSong);
-			nextIntent.putExtra("buttonPosition", buttonPosition);*/
 			sendState(nextIntent);
 			startService(nextIntent);
 		}
@@ -246,6 +246,9 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		play = (Button) findViewById(R.id.play);
 		shuffle = (Button) findViewById(R.id.shuffle);
 		next = (Button) findViewById(R.id.next);
+		songTitle = (TextView) findViewById(R.id.song_title);
+		songDuration = (TextView) findViewById(R.id.song_duration);
+		playImage = (Button) findViewById(R.id.play_image);
 	}
 	
 	public void viewOnClickListener() {
@@ -254,25 +257,69 @@ public class HomeActivity extends Activity implements OnItemClickListener,OnClic
 		play.setOnClickListener(this);
 		shuffle.setOnClickListener(this);
 		next.setOnClickListener(this);
+		playImage.setOnClickListener(this);
+	}
+	
+	//获得playActivity传来的数据
+	public void getState(Intent intent) {
+		itemPosition = intent.getIntExtra("itemPosition", -10);
+		thePlayPosition = intent.getIntExtra("thePlayPosition", 0);
+		buttonPosition = intent.getIntExtra("buttonPosition", 0);
+		currentSong = intent.getStringExtra("currentSong");
+		nextSong = intent.getStringExtra("nextSong");
+		equalSong = intent.getStringExtra("equalSong");
+		repeatModel = intent.getIntExtra("repeatModel",0);
+		shuffleModel = intent.getIntExtra("shuffleModel",0);
 	}
 	
 	//传递给service的数据
 	public void sendState(Intent sendIntent) {
 		sendIntent.putExtra("buttonName", buttonName);
 		sendIntent.putExtra("repeatModel", repeatModel);
-		sendIntent.putExtra("shuffleModel", shuffleModel);
 		sendIntent.putExtra("itemPosition", itemPosition);
 		sendIntent.putExtra("currentSong", currentSong);
 		sendIntent.putExtra("shuffleModel", shuffleModel);
 		sendIntent.putExtra("buttonPosition", buttonPosition);
-		sendIntent.putExtra("equalSong", "equalSong");//连续两次点击同一首歌
+		sendIntent.putExtra("equalSong", equalSong);//连续两次点击同一首歌
 		sendIntent.putExtra("currentSong", currentSong);
 		sendIntent.putExtra("nextSong", nextSong);
 	}
 	
+	//广播接收器
+	class MyBroadcastReceiver extends BroadcastReceiver{
+		@Override
+		public void onReceive(Context context,Intent intent) {
+			ListContent receiverSongContent = null;
+			String action = intent.getAction();
+			if(action.equals(CURRENT_TITLE_ACTION)) {
+				theSongTitle = intent.getIntExtra("theSongTitle",-1);
+				receiverSongContent = listContent.get(theSongTitle);				
+				songTitle.setText(receiverSongContent.getSong());
+			}else if(action.equals(CURRENT_TIME_ACTION)) {
+				songCurrentTime = intent.getIntExtra("songCurrentTime", -1);//接收service发来的当前播放时间
+				songDuration.setText(GetMedia.formatTime(songCurrentTime));
+			}
+		}
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode,int resultCode,Intent data) {
+		switch(requestCode) {
+		case RETURNPLAY:
+			if(resultCode == RESULT_OK) {
+				getState(data);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	
+	
 	@Override
 	protected void  onDestroy() {
 		super.onDestroy();
+		unregisterReceiver(mBroadcastReceiver);
 		Intent stopServiceIntent = new Intent(this,PlayMusicService.class);
 		stopService(stopServiceIntent);
 		if(mediaPlayer != null) {

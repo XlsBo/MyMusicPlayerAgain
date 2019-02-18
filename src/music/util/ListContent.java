@@ -6,18 +6,20 @@ public class ListContent {
 	private String song;
 	private int duration;
 	private String songPath;
+	private String songArtist;
 	
 	public ListContent() {
 		super();
 	}
 	
 	
-	public ListContent(int imageId,String song,int duration,String songPath) {
+	public ListContent(int imageId,String song,int duration,String songPath,String songArtist) {
 		super();
 		this.imageId = imageId;
 		this.song = song;
 		this.duration = duration;
 		this.songPath = songPath;
+		this.songArtist = songArtist;
 	}
 	//获得歌曲的图片，歌名，时长，路径
 	public int getImageId(){
@@ -35,6 +37,9 @@ public class ListContent {
 	public String getSongPath() {
 		return songPath;
 	}
+	public String getSongArtist() {
+		return songArtist;
+	}
 	
 	public int setImageId(int ImageId) {
 		return this.imageId = ImageId;
@@ -50,6 +55,9 @@ public class ListContent {
 	
 	public String setSongPath(String songPath) {
 		return this.songPath = songPath;
+	}
+	public String setSongArtist(String songArtist) {
+		return this.songArtist = songArtist;
 	}
 
 }
