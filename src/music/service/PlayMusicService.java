@@ -3,7 +3,10 @@ package music.service;
 import java.util.List;
 import java.util.Random;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Handler;
@@ -18,7 +21,8 @@ import music.util.ListContent;
 public class PlayMusicService extends Service implements OnCompletionListener{
 	public static final String SERVICE_CURRENT_TIME_ACTION = "music.action.SONG_CURRENT_TIME";
 	public static final String SERVICE_CURRENT_TITLE_ACTION = "music.action.SONG_CURRENT_TITLE";
-	public static final String SERVICE_CURRENT_ARTIST_ACTION="musci.acitoin.SONG_CURRENT_ARTIST";
+	public static final String SERVICE_SEEKBAR_PROGRESS_CHANGE = "music.action.PROGRESS_CHANGE";
+	public static final String SERVICE_IS_PLAY = "music.action.IS_PLAY";
 	private Intent tdIntent = new Intent();
 	public static final String TAG = "PlayMusicService";
 	private int buttonName = 0;                    //按钮的id
@@ -26,6 +30,7 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 	private int itemOpen = 0;                      //判断是否点击了歌曲列表
 	private int repeatModel = 0;                   //单曲循环
 	private int shuffleModel = 0;                  //随机播放
+	private int isPlay = 0;
 	private int thePlayPosition = 0;               //当前播放歌曲的位置
 	private int buttonPosition = 0;                //点击按钮后歌曲的位置
 	private List<ListContent> listContent;
@@ -35,6 +40,9 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 	private MediaPlayer mediaPlayer = new MediaPlayer();
 	private int itemPosition = -10;                //点击列表歌曲的位置
 	private int songCurrentTime = 0;
+	private ServiceBroadcastReceiver serBroad;
+	private IntentFilter intentFilter;
+	
 	
 	//实现计时功能
 	private Handler handler = new Handler() {
@@ -44,7 +52,13 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 					Intent intent = new Intent();
 					songCurrentTime = mediaPlayer.getCurrentPosition();
 					intent.setAction(SERVICE_CURRENT_TIME_ACTION);
+					if(mediaPlayer.isPlaying() == true) {
+						isPlay = 1;
+					}else {
+						isPlay = 0;
+					}
 					intent.putExtra("songCurrentTime", songCurrentTime);
+					intent.putExtra("isPlay", isPlay);
 					sendBroadcast(intent);
 					handler.sendEmptyMessageDelayed(1, 1000);
 				}	
@@ -62,6 +76,10 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 		//listContent要在onCreate中引用GetMedia.getSongInfo(Context context)才能得到context
 		listContent = GetMedia.getSongInfo(PlayMusicService.this);
 		handler.sendEmptyMessage(1);
+		serBroad = new ServiceBroadcastReceiver();
+		intentFilter = new IntentFilter();
+		intentFilter.addAction(SERVICE_SEEKBAR_PROGRESS_CHANGE);
+		registerReceiver(serBroad,intentFilter);
 		super.onCreate();
 	}
 	
@@ -111,6 +129,7 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 		}
 		switch(buttonName) {
 		case R.id.previous:
+		case R.id.play_previous:
 			previousMusic();
 			break;
 		case R.id.repeat:
@@ -123,6 +142,7 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 			}
 			break;
 		case R.id.next:
+		case R.id.play_next:
 			nextMusic();
 			break;
 		case R.id.shuffle:
@@ -135,16 +155,8 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 			}
 			break;
 		case R.id.play:
-			playMusic();
-			break;
-		case R.id.play_previous:
-			previousMusic();
-			break;
 		case R.id.play_stop:
 			playMusic();
-			break;
-		case R.id.play_next:
-			nextMusic();
 			break;
 		default:
 			break;
@@ -155,6 +167,7 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 	//暂停或继续播放
 	public void playMusic() {
 		if(currentSong != null) {
+			Log.d(TAG,"ccc "+currentSong);
 			if(mediaPlayer.isPlaying()) {
 				mediaPlayer.pause();
 				Toast.makeText(this, "暂停播放", Toast.LENGTH_SHORT).show();
@@ -330,14 +343,27 @@ public class PlayMusicService extends Service implements OnCompletionListener{
 		nextSong = intent.getStringExtra("nextSong");//获得下一次点击列表歌曲的路径
 		equalSong = intent.getStringExtra("equalSong");
 	}
+	
+	class ServiceBroadcastReceiver extends BroadcastReceiver{
+		@Override
+		public void onReceive(Context context,Intent intent) {
+			String mAction = intent.getAction();
+			int progress = intent.getIntExtra("progress", -1);
+			if(mAction == SERVICE_SEEKBAR_PROGRESS_CHANGE) {
+				mediaPlayer.seekTo(progress);
+			}
+		}
+	}
 
 	@Override
 	public void onDestroy() {
+		super.onDestroy();
 		if (mediaPlayer != null) {
 			mediaPlayer.stop();
 			mediaPlayer.release();
 			mediaPlayer = null;
 		}
+		unregisterReceiver(serBroad);
 	}
 
 }

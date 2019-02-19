@@ -22,7 +22,7 @@ public class GetMedia {
 			//MediaStore.Audio.Media.DURATION 音频文件的持续时间，以毫秒为单位
 			int songDuration = cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
 			String songPath = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));//获得歌曲的路径
-			String songArtist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+			String songArtist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));		
 			int isMusic = cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.IS_MUSIC));
 			if(isMusic != 0) {
 				songInfo.setImageId(R.drawable.first_song);

@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/home_background"
     android:orientation="vertical" >
     <LinearLayout 
         android:id="@+id/btm_layout"
@@ -62,8 +63,8 @@
 
         <Button
             android:id="@+id/current_song"
-            android:layout_width="wrap_content"
-            android:layout_height="50.0dip"
+            android:layout_width="50dip"
+            android:layout_height="50dip"
             android:layout_alignParentLeft="true"
             android:layout_alignParentBottom="true"
             android:background="@drawable/play_image"  />
@@ -89,6 +90,7 @@
                 android:marqueeRepeatLimit="marquee_forever"
                 android:singleLine="true"
                 android:text="@string/current_song"
+                android:textColor="@color/silver"
                  />
 
             <TextView
@@ -100,15 +102,16 @@
                 android:layout_marginBottom="5.0dp"
                 android:layout_marginLeft="5.0dp"
                 android:text="@string/current_duration"
+                android:textColor="@color/silver"
                  />
 
             <Button
                 android:id="@+id/play_image"
-                android:layout_width="wrap_content"
+                android:layout_width="50dip"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_alignParentTop="true"
-                android:background="@drawable/play_image" />
+                android:background="@drawable/next_activity" />
 
         </RelativeLayout>
 

@@ -16,6 +16,7 @@
         android:layout_alignTop="@id/song_image"
         android:layout_marginTop="5dip"
         android:layout_marginLeft="60dip"
+        android:textColor="@color/silver"
         />
     <TextView 
         android:id="@+id/song_duration"
@@ -24,6 +25,7 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="5.0dip"
+        android:textColor="@color/silver"
         />
     <TextView
         android:id="@+id/song_artist"
@@ -32,6 +34,7 @@
         android:layout_alignLeft="@id/song_name"
         android:layout_marginTop="8dip"
         android:layout_below="@id/song_name"
+        android:textColor="@color/silver"
          />
     
     
